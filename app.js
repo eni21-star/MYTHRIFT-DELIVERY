@@ -2,8 +2,6 @@ import express from 'express'
 const app = express()
 import dotenv from 'dotenv'
 dotenv.config()
-import axios from 'axios'
-import config from './config/config.js'
 import router from './routes/routes.js'
 import { CustomError } from './errorHandlers/errors.js'
 
@@ -22,7 +20,4 @@ app.use((err,req, res, next)=>{
     res.status(500).json({message: err.message})
 })
 
-
-
 export default app
-

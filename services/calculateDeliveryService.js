@@ -1,14 +1,14 @@
 import axios from "axios"
 import config from "../config/config.js"
 import VendorLogin from "./vendorLoginService.js"
-
 import moment from 'moment-timezone'
 import { parentPort } from "worker_threads"
 import BreakDownDatasource from "../datasource/breakDownDatasource.js"
 
-const pickupTime = moment().add(1, 'day').format('YYYY-MM-DD HH:mm:ss')
-const deliveryTime = moment().add(2, 'day').format('YYYY-MM-DD HH:mm:ss');
-console.log(pickupTime);
+const pickupTime = moment().add(1, 'day').startOf('day').add(10, 'hours').format('YYYY-MM-DD HH:mm:ss');
+const deliveryTime = moment(pickupTime, 'YYYY-MM-DD HH:mm:ss').add(2, 'hours').format('YYYY-MM-DD HH:mm:ss');
+
+
 
 class CalculatePricingService {
 
@@ -58,7 +58,7 @@ class CalculatePricingService {
       
               if(response.data.status==200){
                 const newData = { status: response.data.status, message: response.data.message, cost: response.data.data.per_task_cost, pickups: response.data.data.pickups, delivery: response.data.data.deliveries  }
-                return getBill({orderId: params.orderId, accessToken, amount: response.data.data.per_task_cost, pickupTime, total_service_charge:response.data.data.total_service_charge })
+                return getBill({uniqueKey: params.uniqueKey, accessToken, amount: response.data.data.per_task_cost, pickupTime, total_service_charge:response.data.data.total_service_charge })
               }
 
 
@@ -74,36 +74,43 @@ export default CalculatePricingService
 
 async function getBill(params){
 
-    const data = {
-      "access_token": params.accessToken,
-      "benefit_type": null,
-      "amount": params.amount,
-      "insurance_amount": 0,
-      "total_no_of_tasks": 1,
-      "pickup_time": params.pickupTime,
-      "user_id": 1,
-      "form_id": 2,
-      "promo_value": null,
-      "domain_name": config.KWIK_DOMAIN_NAME,
-      "credits": 0,
-      "total_service_charge": params.total_service_charge,
-      "vehicle_id": 0,
-      "delivery_images": "https://s3.ap-south-1.amazonaws.com/kwik-project/task_images/wPqj1603886372690-stripeconnect.png",
-      "is_loader_required": 0,
-      "loaders_amount": 0,
-      "loaders_count": 0,
-      "is_cod_job": 0,
-      "parcel_amount": 0,
-      "delivery_charge_by_buyer": 2,
-      "delivery_instruction": "Hey,Please handover parcel with safety.\nThanks"
-    }
-    const response = await axios.post(`${config.KWIK_URL}/get_bill_breakdown`, data, {
-      headers: {
-        "Content-Type": "application/json"
-      }
-    } )
+    try {
 
-    const create = await new BreakDownDatasource().newData({orderId: params.orderId, additionalData: response.data})
-    return response.data
+      const data = {
+        "access_token": params.accessToken,
+        "benefit_type": null,
+        "amount": params.amount,
+        "insurance_amount": 0,
+        "total_no_of_tasks": 1,
+        "pickup_time": params.pickupTime,
+        "user_id": 1,
+        "form_id": 2,
+        "promo_value": null,
+        "domain_name": config.KWIK_DOMAIN_NAME,
+        "credits": 0,
+        "total_service_charge": params.total_service_charge,
+        "vehicle_id": 0,
+        "delivery_images": "https://s3.ap-south-1.amazonaws.com/kwik-project/task_images/wPqj1603886372690-stripeconnect.png",
+        "is_loader_required": 0,
+        "loaders_amount": 0,
+        "loaders_count": 0,
+        "is_cod_job": 0,
+        "parcel_amount": 0,
+        "delivery_charge_by_buyer": 2,
+        "delivery_instruction": "Hey,Please handover parcel with safety.\nThanks"
+      }
+      const response = await axios.post(`${config.KWIK_URL}/get_bill_breakdown`, data, {
+        headers: {
+          "Content-Type": "application/json"
+        }
+      } )
+  
+      const newData = {uniqueKey: params.uniqueKey, ...response.data.data}
+      const create = await new BreakDownDatasource().newData(newData)
+      return response.data
+      
+    } catch (error) {
+      throw error
+    }
 
 }

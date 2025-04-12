@@ -9,9 +9,9 @@ class BreakDownDatasource {
         }
     }
 
-    async getBreakDown(orderId){
-        console.log(orderId)
-        return await getBreakDownModel.findOne({orderId})
+    async getBreakDown(key){
+      
+        return await getBreakDownModel.findOne({uniqueKey: key })
     }
 }
 

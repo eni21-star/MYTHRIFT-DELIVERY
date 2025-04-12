@@ -12,7 +12,7 @@ class VendorLogin {
                 }
              )
 
-            console.log(response.data.data.access_token)
+             console.log(response.data.data.access_token)
              return response.data.data.access_token
 
     }

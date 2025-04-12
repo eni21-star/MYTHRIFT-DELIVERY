@@ -39,16 +39,17 @@ const dropOffDetails = joi.object({
     'any.required': 'please provide recipient phone number'
   }),
 })
+
 const objectId = joi.string().pattern(/^[0-9a-fA-F]{24}$/).messages({
     'string.pattern.base': 'Invalid Firebase ID'
 });
+
 const validateCalculateDelivery = joi.object({
   pickupDetails: joi.array().items(pickup).required(),
   dropOffDetails: joi.array().items(dropOffDetails).required(),
   deliveryInstructions: joi.string(),
-  orderId: objectId.required().messages({
-    'any.required': 'please provide valid orderId',
-    'string.pattern.base': 'Invalid  Id'
+  uniqueKey: joi.string().required().messages({
+    'any.required': 'please provide valid uniqueKey',
 }),
 })
 

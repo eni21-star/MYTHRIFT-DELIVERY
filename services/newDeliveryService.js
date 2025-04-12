@@ -2,28 +2,35 @@
 import moment from 'moment-timezone'
 import config from '../config/config.js'
 import BreakDownDatasource from '../datasource/breakDownDatasource.js'
-import { NotFoundError } from '../errorHandlers/errors.js'
+import { BadreqError, NotFoundError } from '../errorHandlers/errors.js'
 import VendorLogin from './vendorLoginService.js'
 import DeliveryDatasource from '../datasource/deliveryDatasource.js'
 import axios from 'axios'
 
-const pickupTime = moment().add(1, 'day').format('YYYY-MM-DD HH:mm:ss')
-const deliveryTime = moment().add(2, 'day').format('YYYY-MM-DD HH:mm:ss');
+const pickupTime = moment().add(1, 'day').startOf('day').add(10, 'hours').format('YYYY-MM-DD HH:mm:ss');
+const deliveryTime = moment(pickupTime, 'YYYY-MM-DD HH:mm:ss').add(2, 'hours').format('YYYY-MM-DD HH:mm:ss');
 
 
 class NewDeliveryService {
-
+ 
     async newDelivery(params){
 
       try {
 
-        const getBreakdown = await new BreakDownDatasource().getBreakDown(params.orderId)
+        const getBreakdown = await new BreakDownDatasource().getBreakDown(params.uniqueKey)
         if(!getBreakdown) throw new NotFoundError('order breakdown not found')
       
         
         const accessToken = await new VendorLogin().login()
         params.pickupDetails[0].time = pickupTime
         params.dropOffDetails[0].time = deliveryTime
+
+        params.dropOffDetails[0].has_return_task = false
+        params.dropOffDetails[0].is_package_insured - 0
+        params.dropOffDetails[0].hadVairablePayment = 1
+        params.dropOffDetails[0].hadFixedPayment = 0
+        params.dropOffDetails[0].is_task_otp_required = 0
+        console.log(getBreakdown.ACTUAL_AMOUNT)
         
         const data = {
             "domain_name": config.KWIK_DOMAIN_NAME,
@@ -44,21 +51,21 @@ class NewDeliveryService {
             "parcel_amount": 0,
             "pickups": params.pickupDetails,
             "deliveries": params.dropOffDetails,
-            "insurance_amount": getBreakdown.additionalData.data.INSURANCE_AMOUNT,
+            "insurance_amount": getBreakdown.INSURANCE_AMOUNT,
             "total_no_of_tasks": 1,
-            "total_service_charge": getBreakdown.additionalData.data.TOTAL_SERVICE_CHARGE,
+            "total_service_charge": getBreakdown.TOTAL_SERVICE_CHARGE,
             "payment_method": 524288,
-            "amount": getBreakdown.additionalData.data.ACTUAL_AMOUNT,
-            "surge_cost": getBreakdown.additionalData.data.SURGE_PRICING,
-            "surge_type": getBreakdown.additionalData.data.SURGE_TYPE,
+            "amount": getBreakdown.ACTUAL_AMOUNT,
+            "surge_cost": getBreakdown.SURGE_PRICING,
+            "surge_type": getBreakdown.SURGE_TYPE,
             "is_cod_job": 0,
-            "cash_handling_charges": getBreakdown.additionalData.data.CASH_HANDLING_CHARGE,
-            "cash_handling_percentage": getBreakdown.additionalData.data.CASH_HANDLING_PERCENTAGE,
-            "net_processed_amount": getBreakdown.additionalData.data.NET_CASH_PROCEEDS,
-            "kwister_cash_handling_charge": getBreakdown.additionalData.data.KWISTER_CASH_HANDLING_CHARGE,
-            "delivery_charge_by_buyer": getBreakdown.additionalData.data.delivery_charge_by_buyer,
-            "delivery_charge": getBreakdown.additionalData.data.DELIVERY_CHARGE,
-            "collect_on_delivery": getBreakdown.additionalData.data.COLLECT_ON_DELIVERY,
+            "cash_handling_charges": getBreakdown.CASH_HANDLING_CHARGE,
+            "cash_handling_percentage": getBreakdown.CASH_HANDLING_PERCENTAGE,
+            "net_processed_amount": getBreakdown.NET_CASH_PROCEEDS,
+            "kwister_cash_handling_charge": getBreakdown.KWISTER_CASH_HANDLING_CHARGE,
+            "delivery_charge_by_buyer": getBreakdown.delivery_charge_by_buyer,
+            "delivery_charge": getBreakdown.DELIVERY_CHARGE,
+            "collect_on_delivery": getBreakdown.COLLECT_ON_DELIVERY,
             "delivery_instruction": params.deliveryInstructions,
             "loaders_amount": 0,
             "loaders_count": 0,
@@ -76,7 +83,7 @@ class NewDeliveryService {
         }
 
       } catch (error) {
-         throw error
+        throw error
       }
 
     }
